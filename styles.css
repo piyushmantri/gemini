@@ -83,6 +83,19 @@ body {
   }
 }
 
+@media (prefers-color-scheme: light) {
+  .file-input {
+    background: var(--panel-light);
+  }
+  .file-preview {
+    background: rgba(226, 232, 240, 0.7);
+    border-color: rgba(148, 163, 184, 0.45);
+  }
+  .file-preview button {
+    background: rgba(148, 163, 184, 0.2);
+  }
+}
+
 .config input:focus,
 .prompt textarea:focus {
   outline: none;
@@ -171,14 +184,90 @@ body {
 
 .prompt {
   display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-  align-items: center;
+}
+
+.prompt__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .prompt textarea {
-  flex: 1;
+  width: 100%;
   resize: vertical;
-  min-height: 60px;
+  min-height: 80px;
+}
+
+.prompt__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.file-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.45);
+  color: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.file-input input {
+  display: none;
+}
+
+.file-input:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 14px rgba(99, 102, 241, 0.25);
+}
+
+.file-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.file-preview img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.file-preview button {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.85rem;
+  color: inherit;
+  background: rgba(148, 163, 184, 0.2);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.file-preview button:hover {
+  background: rgba(148, 163, 184, 0.35);
+  transform: translateY(-1px);
+}
+
+.prompt__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .prompt button {

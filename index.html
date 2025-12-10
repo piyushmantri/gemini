@@ -28,8 +28,22 @@
     <section id="chat" class="chat" aria-live="polite"></section>
 
     <form id="promptForm" class="prompt" autocomplete="off">
-      <textarea id="promptInput" rows="3" placeholder="Ask Gemini anything…" required></textarea>
-      <button type="submit">Send</button>
+      <div class="prompt__editor">
+        <textarea id="promptInput" rows="3" placeholder="Ask Gemini anything…"></textarea>
+        <div class="prompt__attachments">
+          <label class="file-input">
+            <input type="file" id="imageInput" accept="image/*" />
+            <span>Attach image</span>
+          </label>
+          <div id="imagePreview" class="file-preview" hidden>
+            <img alt="Selected image preview" />
+            <button type="button" id="clearImage" aria-label="Remove image">Remove</button>
+          </div>
+        </div>
+      </div>
+      <div class="prompt__actions">
+        <button type="submit">Send</button>
+      </div>
     </form>
   </main>
 

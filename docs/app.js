@@ -15,7 +15,8 @@ const state = {
   errorBanner: null,
   modelCapabilities: new Map(
     DEFAULT_MODELS.map((entry) => [entry.name, new Set(entry.methods)])
-  )
+  ),
+  pendingImage: null
 };
 
 const elements = {
@@ -25,6 +26,10 @@ const elements = {
   chat: document.getElementById('chat'),
   promptForm: document.getElementById('promptForm'),
   promptInput: document.getElementById('promptInput'),
+  imageInput: document.getElementById('imageInput'),
+  imagePreview: document.getElementById('imagePreview'),
+  previewImage: document.querySelector('#imagePreview img'),
+  clearImage: document.getElementById('clearImage'),
   template: document.getElementById('messageTemplate'),
   sendButton: document.querySelector('#promptForm button'),
   config: document.querySelector('.config')
@@ -36,6 +41,12 @@ registerEventHandlers();
 
 function registerEventHandlers() {
   elements.promptForm.addEventListener('submit', handleSubmit);
+  if (elements.imageInput) {
+    elements.imageInput.addEventListener('change', handleImageChange);
+  }
+  if (elements.clearImage) {
+    elements.clearImage.addEventListener('click', handleClearImageClick);
+  }
 }
 
 function initModelInput() {
@@ -43,6 +54,82 @@ function initModelInput() {
   if (defaultModel) {
     elements.modelInput.value = defaultModel;
   }
+}
+
+async function handleImageChange(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) {
+    clearImageSelection();
+    return;
+  }
+
+  if (!file.type || !file.type.startsWith('image/')) {
+    showError('Please choose an image file.');
+    clearImageSelection({ focus: true });
+    return;
+  }
+
+  try {
+    const dataUrl = await readFileAsDataURL(file);
+    const base64 = stripDataPrefix(dataUrl);
+    if (!base64) {
+      throw new Error('Failed to process the selected image.');
+    }
+    state.pendingImage = {
+      name: file.name,
+      mimeType: file.type || 'image/png',
+      base64,
+      previewUrl: dataUrl
+    };
+    showImagePreview(dataUrl);
+  } catch (error) {
+    showError(normalizeError(error));
+    clearImageSelection({ focus: true });
+  }
+}
+
+function handleClearImageClick(event) {
+  event.preventDefault();
+  clearImageSelection({ focus: true });
+}
+
+function showImagePreview(dataUrl) {
+  if (!elements.imagePreview || !elements.previewImage) {
+    return;
+  }
+  elements.previewImage.src = dataUrl;
+  elements.imagePreview.hidden = false;
+  if (elements.clearImage) {
+    elements.clearImage.disabled = false;
+  }
+}
+
+function clearImageSelection({ focus = false } = {}) {
+  state.pendingImage = null;
+  if (elements.imageInput) {
+    elements.imageInput.value = '';
+    if (focus) {
+      elements.imageInput.focus();
+    }
+  }
+  if (elements.previewImage) {
+    elements.previewImage.removeAttribute('src');
+  }
+  if (elements.imagePreview) {
+    elements.imagePreview.hidden = true;
+  }
+  if (elements.clearImage) {
+    elements.clearImage.disabled = false;
+  }
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Unable to read the selected file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function getModelCapabilities(model) {
@@ -95,7 +182,7 @@ async function handleSubmit(event) {
     return;
   }
 
-  if (!prompt) {
+  if (!prompt && !state.pendingImage) {
     return;
   }
 
@@ -107,7 +194,30 @@ async function handleSubmit(event) {
   const canGenerateContent = capabilities.has('generateContent');
   const canGenerateImages = capabilities.has('generateImages');
 
-  const userParts = [{ text: prompt }];
+  if (state.pendingImage && !canGenerateContent) {
+    showError('This model does not accept image uploads. Try a Gemini multimodal model.');
+    return;
+  }
+
+  const imageSelection = state.pendingImage
+    ? { inlineData: { mimeType: state.pendingImage.mimeType, data: state.pendingImage.base64 } }
+    : null;
+
+  if (imageSelection) {
+    clearImageSelection();
+  }
+
+  const userParts = [];
+  if (prompt) {
+    userParts.push({ text: prompt });
+  }
+  if (imageSelection) {
+    userParts.push(imageSelection);
+  }
+  if (!userParts.length) {
+    return;
+  }
+
   const userMessageElement = addMessage('user', userParts);
   scrollChatToBottom();
 
@@ -540,6 +650,12 @@ function createLoadingIndicator() {
 function setFormDisabled(isDisabled) {
   elements.promptInput.disabled = isDisabled;
   elements.sendButton.disabled = isDisabled;
+  if (elements.imageInput) {
+    elements.imageInput.disabled = isDisabled;
+  }
+  if (elements.clearImage) {
+    elements.clearImage.disabled = isDisabled;
+  }
 }
 
 function normalizeModelName(model) {
